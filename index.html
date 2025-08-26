@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>আজানের সময়সূচী</title>
+<meta name="theme-color" content="#0d3b29">
+<style>
+  :root{
+    --bg1:#0d3b29; --bg2:#134b35; --card:#0f3f2f; --gold:#ffd700; --muted:#d9efe0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Noto Sans Bengali","Hind Siliguri",system-ui,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#fff}
+  .app{max-width:760px;margin:0 auto;padding:14px 14px 120px}
+  /* Header */
+  .hero{padding:18px;border-radius:12px;background:linear-gradient(135deg,#0f5b41,#0b3e2c);box-shadow:0 12px 32px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.04)}
+  .hero h1{margin:0;font-size:26px;font-weight:900;color:var(--gold);text-shadow:0 2px 6px rgba(0,0,0,.45)}
+  .hero .subtitle{margin:6px 0 0;color:rgba(255,255,255,.9);font-size:14px}
+  /* marquee */
+  .ticker{overflow:hidden;white-space:nowrap;margin-top:12px;border-top:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);padding:8px 0}
+  .track{display:inline-block;padding-left:100%;animation:marquee 20s linear infinite}
+  .track span{font-weight:800;font-size:18px}
+  @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+
+  /* Cards */
+  .cards{margin-top:16px;display:grid;gap:12px}
+  .card{display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:14px;background:linear-gradient(180deg,var(--card),rgba(255,255,255,.02));box-shadow:0 10px 24px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.04)}
+  .left{display:flex;gap:12px;align-items:center}
+  .icon{width:52px;height:52px;border-radius:12px;background:rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;font-size:24px}
+  .pname{font-weight:900;color:var(--gold);font-size:16px;margin-bottom:4px}
+  .ptime{font-size:15px;color:#e9fff5}
+  .actions{display:flex;gap:8px}
+  .btn{border:0;padding:10px 12px;border-radius:10px;font-weight:800;cursor:pointer;box-shadow:0 6px 12px rgba(0,0,0,.25)}
+  .btn-adhan{background:var(--gold);color:#143c2a}
+  .btn-niyat{background:#fff;color:#0d3b29}
+  .btn.playing{outline:2px solid rgba(255,255,255,.16)}
+
+  /* overlay niyat */
+  .overlay{position:fixed;inset:0;display:none;background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,.6));backdrop-filter:blur(4px);z-index:60}
+  .sheet{position:fixed;left:10px;right:10px;top:8%;bottom:8%;background:#0e3a2b;border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,.06);overflow:auto}
+  .sheet h2{margin:0;color:var(--gold);font-size:20px}
+  .sheet .meta{color:var(--muted);margin-top:6px}
+  .ar{direction:rtl;font-family:"Noto Naskh Arabic",serif;font-size:24px;line-height:1.9;background:rgba(255,255,255,0.03);padding:12px;border-radius:10px;margin-top:12px}
+  .tr{margin-top:12px;color:#e9fff5}
+  .bn{margin-top:12px;background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;color:#fff}
+  .sheet .bar{display:flex;gap:8px;justify-content:space-between;margin-top:14px}
+  .back{background:transparent;border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:10px;color:var(--muted);cursor:pointer}
+  .speak{background:var(--gold);color:#143c2a;border:0;padding:10px 12px;border-radius:10px;font-weight:900;cursor:pointer}
+  /* ad */
+  .adWrap{margin:18px auto 0;text-align:center}
+  footer{position:fixed;left:0;right:0;bottom:0;padding:12px;text-align:center;background:linear-gradient(180deg,transparent,rgba(0,0,0,.28));font-size:13px}
+  .credit{display:inline-block;padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.04)}
+  @media (max-width:420px){ .icon{width:44px;height:44px;font-size:20px} .ar{font-size:20px} }
+</style>
+</head>
+<body>
+  <div class="app">
+    <section class="hero" role="banner">
+      <h1>আজানের সময়সূচী</h1>
+      <div class="subtitle">মক্কা (Mecca) অনুযায়ী প্রতিদিনের সময় গণনা করা হয়</div>
+
+      <div class="ticker" aria-hidden="false" aria-label="কলেমা শরীফ">
+        <div class="track">
+          <span>أَشْهَدُ أَنْ لاَ إِلَـٰهَ إِلاَّ اللهُ • أَشْهَدُ أَنَّ مُحَمَّدًا رَسُولُ اللهِ • أشهد أن لا إله إلا الله، أشهد أن محمدا رسول الله • লা ইলাহা ইল্লাল্লাহু মুহাম্মাদুর রাসূলুল্লাহ • </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="cards" id="cards" aria-live="polite"></section>
+
+    <!-- Ad (user script) -->
+    <div class="adWrap" id="adWrap">
+      <script type="text/javascript">
+        atOptions = { 'key' : 'efb975245dfcbf39d8bf2511556127d8', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} };
+      </script>
+      <script type="text/javascript" src="https://www.highperformanceformat.com/efb975245dfcbf39d8bf2511556127d8/invoke.js"></script>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ny-title">
+      <h2 id="ny-title">নিয়ত</h2>
+      <div class="meta" id="ny-sub"></div>
+      <div class="ar" id="ny-ar" lang="ar"></div>
+      <div class="tr" id="ny-tr"></div>
+      <div class="bn" id="ny-bn"></div>
+      <div class="bar">
+        <button class="back" id="closeBtn">← ফিরে যান</button>
+        <div>
+          <button class="speak" id="speakBtn">আরবি উচ্চারণ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer><span class="credit">অ্যাপ তৈরি করেছেন <strong>আজিবুদ্দিন সেখ</strong></span></footer>
+
+<script>
+/* ----------------- Data ----------------- */
+const ORDER = ["fajr","dhuhr","asr","maghrib","isha"];
+const NAMES = {fajr:"ফজর",dhuhr:"যোহর",asr:"আসর",maghrib:"মাগরিব",isha:"এশা"};
+const ICONS = {fajr:"🌄",dhuhr:"☀️",asr:"🌤️",maghrib:"🌆",isha:"🌙"};
+const ADHAN = {
+  fajr:"https://www.islamcan.com/audio/adhan/azan1.mp3",
+  dhuhr:"https://www.islamcan.com/audio/adhan/azan2.mp3",
+  asr:"https://www.islamcan.com/audio/adhan/azan3.mp3",
+  maghrib:"https://www.islamcan.com/audio/adhan/azan4.mp3",
+  isha:"https://www.islamcan.com/audio/adhan/azan5.mp3"
+};
+const NIYYAH = {
+  fajr:{title:"ফজরের নিয়ত (২ রাকাত, ফরজ)", ar:"نَوَيْتُ أَنْ أُصَلِّيَ رَكْعَتَيْنِ فَرْضَ صَلَاةِ الْفَجْرِ لِلّٰهِ تَعَالَى", tr:"নাওয়াইতু আন উসাল্লিয়া রাক'আতাইনি ফারদা সালাতিল ফাজরি লিল্লাহি তা'আলা।", bn:"আমি দুই রাকাত ফজরের ফরজ নামাজ আদায় করার নিয়ত করলাম।"},
+  dhuhr:{title:"যোহরের নিয়ত (৪ রাকাত, ফরজ)", ar:"نَوَيْتُ أَنْ أُصَلِّيَ أَرْبَعَ رَكَعَاتٍ فَرْضَ صَلَاةِ الظُّهْرِ لِلّٰهِ تَعَالَى", tr:"নাওয়াইতু আন উসাল্লিয়া আরবা' রাক'আতিন ফারদা সালাতিচ্-জুহরি লিল্লাহি তা'আলা।", bn:"আমি চার রাকাত যোহরের ফরজ নামাজ আদায় করার নিয়ত করলাম।"},
+  asr:{title:"আসরের নিয়ত (৪ রাকাত, ফরজ)", ar:"نَوَيْتُ أَنْ أُصَلِّيَ أَرْبَعَ رَكَعَاتٍ فَرْضَ صَلَاةِ الْعَصْرِ لِلّٰهِ تَعَالَى", tr:"নাওয়াইতু আন উসাল্লিয়া আরবা' রাক'আতিন ফারদা সালাতিল আসরি লিল্লাহি তা'আলা।", bn:"আমি চার রাকাত আসরের ফরজ নামাজ আদায় করার নিয়ত করলাম।"},
+  maghrib:{title:"মাগরিবের নিয়ত (৩ রাকাত, ফরজ)", ar:"نَوَيْتُ أَنْ أُصَلِّيَ ثَلَاثَ رَكَعَاتٍ فَرْضَ صَلَاةِ الْمَغْرِبِ لِلّٰهِ تَعَالَى", tr:"নাওয়াইতু আন উসাল্লিয়া সালাসা রাক'আতিন ফারদা সালাতিল মাগরিবি লিল্লাহি তা'আলা।", bn:"আমি তিন রাকাত মাগরিবের ফরজ নামাজ আদায় করার নিয়ত করলাম।"},
+  isha:{title:"এশার নিয়ত (৪ রাকাত, ফরজ)", ar:"نَوَيْتُ أَنْ أُصَلِّيَ أَرْبَعَ رَكَعَاتٍ فَرْضَ صَلَاةِ الْعِشَاءِ لِلّٰهِ تَعَالَى", tr:"নাওয়াইতু আন উসাল্লিয়া আরবা' রাক'আতিন ফারদা সালাতিল ইশাঈ লিল্লাহি তা'আলা।", bn:"আমি চার রাকাত এশার ফরজ নামাজ আদায় করার নিয়ত করলাম।"}
+};
+
+/* ----------------- Prayer calc (Mecca local times) ----------------- */
+const MECCA = {lat:21.3891, lon:39.8579, tz:3};
+
+function deg2rad(d){return d*Math.PI/180}
+function rad2deg(r){return r*180/Math.PI}
+function daysSinceJ2000(dateUTC){
+  return (dateUTC - Date.UTC(2000,0,1,12,0,0,0)) / 86400000;
+}
+function solarDeclEOT(d){
+  const g = deg2rad((357.529 + 0.98560028*d) % 360);
+  const q = deg2rad((280.459 + 0.98564736*d) % 360);
+  const L = q + deg2rad(1.915)*Math.sin(g) + deg2rad(0.020)*Math.sin(2*g);
+  const e = deg2rad(23.439 - 0.00000036*d);
+  const ra = Math.atan2(Math.cos(e)*Math.sin(L), Math.cos(L));
+  const dec = Math.asin(Math.sin(e)*Math.sin(L));
+  let E = rad2deg(q - ra); if(E>180) E-=360; if(E<-180) E+=360;
+  return {dec, eotMin: 4*E};
+}
+function hourAngleForAlt(phi, dec, altRad){
+  const cosH = (Math.sin(altRad) - Math.sin(phi)*Math.sin(dec)) / (Math.cos(phi)*Math.cos(dec));
+  return Math.acos(Math.min(1, Math.max(-1, cosH)));
+}
+function asrAlt(phi, dec, n=1){
+  return Math.atan(1/(n + Math.tan(Math.abs(phi - dec))));
+}
+
+function ksaMidnightUTCDate(){
+  // return Date object at 00:00 KSA as UTC
+  const now = new Date();
+  const ksaNow = new Date(now.getTime() + MECCA.tz*3600*1000);
+  return new Date(Date.UTC(ksaNow.getUTCFullYear(), ksaNow.getUTCMonth(), ksaNow.getUTCDate()));
+}
+
+function computePrayerHours(){
+  const dateUTC = ksaMidnightUTCDate();
+  const d = daysSinceJ2000(dateUTC);
+  const {dec, eotMin} = solarDeclEOT(d);
+  const phi = deg2rad(MECCA.lat);
+  const lng = MECCA.lon;
+  const tz = MECCA.tz;
+
+  const Dhuhr = 12 + tz - (lng/15) - (eotMin/60);
+  const altSunrise = deg2rad(-0.833);
+  const Hsun = rad2deg(hourAngleForAlt(phi, dec, altSunrise))/15;
+  const sunrise = Dhuhr - Hsun;
+  const sunset = Dhuhr + Hsun;
+
+  const Hfajr = rad2deg(hourAngleForAlt(phi, dec, deg2rad(-18)))/15;
+  const Hisha = rad2deg(hourAngleForAlt(phi, dec, deg2rad(-17)))/15;
+  const fajr = Dhuhr - Hfajr;
+  const isha = Dhuhr + Hisha;
+
+  const altAsr = asrAlt(phi, dec, 1);
+  const Hasr = rad2deg(hourAngleForAlt(phi, dec, altAsr))/15;
+  const asr = Dhuhr + Hasr;
+
+  return {fajr, dhuhr:Dhuhr, asr, maghrib:sunset, isha};
+}
+
+/* ----------------- format hour (12-hour AM/PM like 4:45 AM) ----------------- */
+function format12(hoursFloat){
+  let h = Math.floor(hoursFloat);
+  let m = Math.round((hoursFloat - h)*60);
+  if(m===60){ h=(h+1)%24; m=0; }
+  const hh = ((h+11)%12)+1; // 1..12
+  const ampm = h < 12 ? "AM" : "PM";
+  return `${hh}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+/* ----------------- UI render & actions ----------------- */
+const cardsEl = document.getElementById('cards');
+let currentAudio = null, currentBtn = null;
+
+function stopAudio(){
+  if(currentAudio){ try{ currentAudio.pause(); currentAudio.currentTime = 0; }catch(e){} }
+  if(currentBtn) currentBtn.classList.remove('playing');
+  currentAudio = null; currentBtn = null;
+}
+function playAdhan(key, btn){
+  if(currentBtn === btn){ stopAudio(); return; }
+  stopAudio();
+  const src = ADHAN[key];
+  currentAudio = new Audio(src);
+  currentBtn = btn;
+  btn.classList.add('playing');
+  // TTS announcement in Bangla
+  try{
+    const u = new SpeechSynthesisUtterance(`এখন ${NAMES[key]} এর আজান চলছে`);
+    u.lang = 'bn-BD';
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+  currentAudio.play().catch(()=>{});
+  currentAudio.addEventListener('ended', stopAudio);
+}
+
+function render(){
+  const times = computePrayerHours();
+  cardsEl.innerHTML = "";
+  ORDER.forEach(k=>{
+    const div = document.createElement('div'); div.className = 'card';
+    div.innerHTML = `
+      <div class="left">
+        <div class="icon">${ICONS[k]}</div>
+        <div>
+          <div class="pname">${NAMES[k]}</div>
+          <div class="ptime" id="t-${k}">${format12(times[k])}</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-adhan" data-k="${k}">আজান শুনুন</button>
+        <button class="btn btn-niyat" data-k="${k}">নিয়ত</button>
+      </div>
+    `;
+    cardsEl.appendChild(div);
+  });
+
+  // attach events
+  document.querySelectorAll('.btn-adhan').forEach(b=>{
+    b.addEventListener('click', ()=>playAdhan(b.dataset.k, b));
+  });
+  document.querySelectorAll('.btn-niyat').forEach(b=>{
+    b.addEventListener('click', ()=>openNiyyah(b.dataset.k));
+  });
+}
+
+/* ----------------- Niyyah overlay w/ history handling ----------------- */
+const overlay = document.getElementById('overlay');
+const nyTitle = document.getElementById('ny-title');
+const nySub = document.getElementById('ny-sub');
+const nyAr = document.getElementById('ny-ar');
+const nyTr = document.getElementById('ny-tr');
+const nyBn = document.getElementById('ny-bn');
+const closeBtn = document.getElementById('closeBtn');
+const speakBtn = document.getElementById('speakBtn');
+
+closeBtn.addEventListener('click', closeOverlay);
+function openNiyyah(key){
+  const d = NIYYAH[key];
+  nyTitle.textContent = d.title;
+  nySub.textContent = NAMES[key];
+  nyAr.textContent = d.ar;
+  nyTr.textContent = "বাংলা উচ্চারণ: " + d.tr;
+  nyBn.textContent = "অর্থ: " + d.bn;
+  overlay.style.display = 'block'; overlay.setAttribute('aria-hidden','false');
+  history.pushState({view:'niyat'}, "", `#niyat-${key}`);
+  stopAudio();
+  speakBtn.onclick = ()=> {
+    try{
+      const u = new SpeechSynthesisUtterance(d.ar);
+      u.lang = 'ar-SA'; u.rate=0.9;
+      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+    }catch(e){}
+  };
+}
+function closeOverlay(){
+  overlay.style.display = 'none'; overlay.setAttribute('aria-hidden','true');
+  if(location.hash && location.hash.startsWith('#niyat')) history.back();
+}
+window.addEventListener('popstate', (e)=>{ // hardware back
+  // hide overlay on popstate
+  overlay.style.display = 'none'; overlay.setAttribute('aria-hidden','true');
+});
+
+/* ----------------- init ----------------- */
+render();
+// recompute every minute in case day rolls
+setInterval(render, 60*1000);
+</script>
+</body>
+</html>
